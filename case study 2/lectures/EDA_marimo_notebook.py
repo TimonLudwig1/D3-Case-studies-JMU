@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.9"
+__generated_with = "0.23.6"
 app = marimo.App(width="medium")
 
 
@@ -70,7 +70,7 @@ def _(mo):
     | **Dynamic capacity management** | Updated as the booking horizon unfolds | Live booking stream |
     | **Integrated optimization** | Joint pricing × capacity, forecast-driven | Predictive models + optimization |
 
-    Week 1 lived in the first column. Week 2 moves you to the second and
+    Week 1 lived in the first (column) row. Week 2 moves you to the second and
     sketches the third. The skill you are practicing is *not* picking the
     "best" model — it is **knowing which level of sophistication is justified
     by your data and your operational reality**.
@@ -98,8 +98,8 @@ def _():
     HOTEL_COLORS = {"City Hotel": "#1f77b4", "Resort Hotel": "#ff7f0e"}
 
     def load_bookings():
-        df = pd.read_csv(DATA_URL)
-        df["arrival_date"] = pd.to_datetime(
+        df = pd.read_csv(DATA_URL)  #df: is just "a hint" for the IDE, that this will be a DF. In Python, there is no way of "enforcing" datatypes, it is dynamic
+        df["arrival_date"] = pd.to_datetime(                        #function benutzt übergeordnete variable, weil DATA_URL nicht als argument in fuction ist
             df["arrival_date_year"].astype(str)
             + "-"
             + df["arrival_date_month"]
@@ -135,6 +135,12 @@ def _():
     return HOTEL_COLORS, bookings, go, pd, px
 
 
+@app.cell
+def _(bookings):
+    bookings.head()
+    return
+
+
 @app.cell(hide_code=True)
 def _(bookings, mo):
     mo.md(f"""
@@ -162,14 +168,14 @@ def _(mo):
 
 @app.cell
 def _(HOTEL_COLORS, bookings, mo, px):
-    realised_univ = bookings[bookings["is_canceled"] == 0]
+    realised_univ = bookings[bookings["is_canceled"] == 0]      #nur realisierte bookings
 
     # Top 10 booking agents.
     agents_df = (
-        realised_univ["agent"].dropna().astype(int).value_counts().head(10)
-        .rename_axis("agent").reset_index(name="bookings")
+        realised_univ["agent"].dropna().astype(int).value_counts().head(10)     #agents_df ist df mit top 10 agents, "agents" spalte als str und NaN zeilen droppen
+        .rename_axis("agent").reset_index(name="bookings")                      #value_counts sortiert automatisch der größe nach
     )
-    agents_df["agent"] = agents_df["agent"].astype(str)
+    agents_df["agent"] = agents_df["agent"].astype(str)         #doppelt astype (weiß nicht ob nötig, schadet aber nicht)
     c_agents = px.bar(
         agents_df, x="bookings", y="agent", orientation="h",
         title="Top 10 booking agents",
@@ -180,17 +186,17 @@ def _(HOTEL_COLORS, bookings, mo, px):
 
     # Room type — demand and ADR as SEPARATE panels (no dual axis).
     room_demand_df = (
-        realised_univ["reserved_room_type"].value_counts()
+        realised_univ["reserved_room_type"].value_counts()          #room_demand ebenfalls der größe nach sortieren und plotten
         .rename_axis("room").reset_index(name="bookings")
         .sort_values("room")
     )
     room_adr_df = (
-        realised_univ.loc[realised_univ["adr_per_adult"].between(0, 250)]
-        .groupby("reserved_room_type")["adr_per_adult"].median()
-        .rename_axis("room").reset_index(name="median_adr_adult")
+        realised_univ.loc[realised_univ["adr_per_adult"].between(0, 250)] #filtern: .loc -> filtert index, nur adr_p_a zwischen 0 und 250
+        .groupby("reserved_room_type")["adr_per_adult"].median()            #nach room type gruppieren und jeweils median berechnen: groupby() und dann spaltenauswahl mit [], dann .meadian()
+        .rename_axis("room").reset_index(name="median_adr_adult")       #optische Aufbereitung: index in "room" umbenenen und neue spalte bekommt "median_adr_adult" und sortieren
         .sort_values("room")
     )
-    c_room_demand = px.bar(
+    c_room_demand = px.bar(                             #room demand plotten
         room_demand_df, x="room", y="bookings",
         title="Room type — demand",
         labels={"room": "Reserved room type", "bookings": "Realised bookings"},
@@ -205,10 +211,10 @@ def _(HOTEL_COLORS, bookings, mo, px):
 
     # Top 10 source countries.
     countries_df = (
-        realised_univ["country"].value_counts().head(10)
+        realised_univ["country"].value_counts().head(10)                #value counts der Länder und dann top ten sortiert
         .rename_axis("country").reset_index(name="bookings")
     )
-    c_countries = px.bar(
+    c_countries = px.bar(                                               #countries plotten
         countries_df, x="bookings", y="country", orientation="h",
         title="Top 10 source countries",
         labels={"bookings": "Realised bookings", "country": "Country"},
@@ -218,9 +224,9 @@ def _(HOTEL_COLORS, bookings, mo, px):
 
     # Meal preference per hotel (grouped bar).
     meals_df = (
-        realised_univ.groupby(["hotel", "meal"]).size().reset_index(name="bookings")
-    )
-    meal_order = ["BB", "HB", "SC", "FB", "Undefined"]
+        realised_univ.groupby(["hotel", "meal"]).size().reset_index(name="bookings")            #groupby( [list] ) macht mögliche tupel aus allen kombinationen der einträge.
+    )                                                                                              # .size() zählt wie viele zeilen pro tupel (=bookings)
+    meal_order = ["BB", "HB", "SC", "FB", "Undefined"]                  #plotten: list für categories des bar charts
     c_meals = px.bar(
         meals_df, x="meal", y="bookings", color="hotel", barmode="group",
         category_orders={"meal": meal_order},
@@ -234,6 +240,12 @@ def _(HOTEL_COLORS, bookings, mo, px):
         mo.hstack([c_room_demand, c_room_adr], justify="start"),
         mo.hstack([c_meals], justify="start"),
     ])
+    return (agents_df,)
+
+
+@app.cell
+def _(agents_df):
+    agents_df.head(10)
     return
 
 
@@ -262,20 +274,20 @@ def _(mo):
 def _(HOTEL_COLORS, bookings, go, mo, pd, px):
     realised_h = bookings[bookings["is_canceled"] == 0].copy()
     realised_h["total_nights"] = (
-        realised_h["stays_in_weekend_nights"] + realised_h["stays_in_week_nights"]
+        realised_h["stays_in_weekend_nights"] + realised_h["stays_in_week_nights"] #total nights = weekday + weekend
     )
-    realised_h["revenue"] = realised_h["adr"] * realised_h["total_nights"]
+    realised_h["revenue"] = realised_h["adr"] * realised_h["total_nights"]  #umsatz = anzahl nächte * durchschn. preis pro nacht
 
     summary_rows = []
-    for _h in ["City Hotel", "Resort Hotel"]:
-        mask = bookings["hotel"] == _h
-        rmask = realised_h["hotel"] == _h
+    for _h in ["City Hotel", "Resort Hotel"]:       #für beide Hotels 4 KPIs berechnen 
+        mask = bookings["hotel"] == _h      #objekt 1: alle bookings von hotel, auch stornierte -> mask ist eine Reihe von 0 oder 1 werten
+        rmask = realised_h["hotel"] == _h   #objekt 2. nur realisierte bookings des hotels
         summary_rows.append({
             "hotel": _h,
-            "volume_share": mask.mean() * 100,
-            "revenue_M": realised_h.loc[rmask, "revenue"].sum() / 1e6,
-            "cancel_rate": bookings.loc[mask, "is_canceled"].mean() * 100,
-            "repeat_rate": realised_h.loc[rmask, "is_repeated_guest"].mean() * 100,
+            "volume_share": mask.mean() * 100,                  # = anzahl 1 / alle einträge = ein anteil 0,... das mal 100 ist prozentwert. Wie viele Buchungen fallen auf das speziefiscshe hotel 
+            "revenue_M": realised_h.loc[rmask, "revenue"].sum() / 1e6,  #filtern nach: da wo mask True (also 1) ist die revenue spalte, diese aufsummieren und dann durch 1mio teilen 
+            "cancel_rate": bookings.loc[mask, "is_canceled"].mean() * 100,  #anteil an cancellations pro hotel
+            "repeat_rate": realised_h.loc[rmask, "is_repeated_guest"].mean() * 100, #anteil an leuten die nochmal dort gebucht haben pro hotel
         })
     summary_df = pd.DataFrame(summary_rows)
     metric_labels = {
@@ -306,7 +318,7 @@ def _(HOTEL_COLORS, bookings, go, mo, pd, px):
     # Lead-time box-like (precomputed quartiles → go.Box).
     lt_box = go.Figure()
     for _h in ["City Hotel", "Resort Hotel"]:
-        _sub = bookings.loc[bookings["hotel"] == _h, "lead_time"]
+        _sub = bookings.loc[bookings["hotel"] == _h, "lead_time"]       #lead time haben wir schon am anfang berechnet
         lt_box.add_trace(go.Box(
             name=_h, x=[_h],
             q1=[float(_sub.quantile(0.25))],
@@ -325,6 +337,19 @@ def _(HOTEL_COLORS, bookings, go, mo, pd, px):
     c_lead_time = lt_box
 
     mo.vstack([c_hotel_metrics, c_lead_time])
+    return (realised_h,)
+
+
+@app.cell
+def _(realised_h):
+    realised_h.loc[realised_h["hotel"] == "City Hotel", "total_nights"].mean()
+    realised_h.loc[realised_h["hotel"] == "City Hotel", "adr"].mean()
+    return
+
+
+@app.cell
+def _(realised_h):
+    realised_h.loc[realised_h["hotel"] == "Resort Hotel", "adr"].mean()
     return
 
 
@@ -354,7 +379,7 @@ def _(bookings, go, mo, px):
     chan_order = realised_ch["distribution_channel"].value_counts().index.tolist()
 
     chan_vol_df = (
-        realised_ch["distribution_channel"].value_counts()
+        realised_ch["distribution_channel"].value_counts()      #value count der chanels
         .rename_axis("channel").reset_index(name="bookings")
     )
     c_chan_volume = px.bar(
@@ -365,7 +390,7 @@ def _(bookings, go, mo, px):
     ).update_layout(width=280, height=240, margin=dict(l=10, r=10, t=40, b=10))
     c_chan_volume.update_traces(marker_color="#1f77b4")
 
-    c_chan_lead = go.Figure()
+    c_chan_lead = go.Figure()                           #pro gruppierten chanel einen chart
     for ch in chan_order:
         _sub = bookings.loc[bookings["distribution_channel"] == ch, "lead_time"]
         c_chan_lead.add_trace(go.Box(
@@ -384,7 +409,7 @@ def _(bookings, go, mo, px):
 
     chan_adr_df = (
         realised_ch[realised_ch["adr_per_adult"].between(0, 250)]
-        .groupby("distribution_channel")["adr_per_adult"].median()
+        .groupby("distribution_channel")["adr_per_adult"].median()          #adr_p_a nach distr_chanel groupen und median bestimmen
         .rename_axis("channel").reset_index(name="median_adr_adult")
     )
     c_chan_pricing = px.bar(
@@ -428,13 +453,13 @@ def _(HOTEL_COLORS, bookings, pd, px):
     ]
 
     monthly_vol_df = (
-        realised_t.groupby(["arrival_date_month", "hotel"]).size()
+        realised_t.groupby(["arrival_date_month", "hotel"]).size()      #groupen nach monat und hotel und mit size anzahl an bookings (rows) zählen
         .reset_index(name="value")
         .assign(metric="Realised bookings")
     )
     monthly_adr_df = (
         realised_t[realised_t["adr_per_adult"].between(0, 250)]
-        .groupby(["arrival_date_month", "hotel"])["adr_per_adult"].median()
+        .groupby(["arrival_date_month", "hotel"])["adr_per_adult"].median() #wieder nach monat und hotel groupen, und für jede gruppe den medain berechnen
         .reset_index(name="value")
         .assign(metric="Median ADR per adult (€)")
     )
@@ -466,6 +491,49 @@ def _(HOTEL_COLORS, bookings, pd, px):
     c_temporal.update_yaxes(matches=None, showticklabels=True)
     c_temporal.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
     c_temporal
+    return month_order, realised_t
+
+
+@app.cell
+def _(month_order, pd, realised_t):
+    df_bookings_year_customer = (
+        realised_t.groupby(["arrival_date_month", "customer_type"]).size()
+        .reset_index(name="value")
+    )
+    df_bookings_year_customer["arrival_date_month"] = pd.Categorical(
+        df_bookings_year_customer["arrival_date_month"], categories=month_order, ordered=True
+    )
+    df_bookings_year_customer = df_bookings_year_customer.sort_values(["arrival_date_month", "customer_type"])
+    df_bookings_year_customer
+    return (df_bookings_year_customer,)
+
+
+@app.cell
+def _(df_bookings_year_customer, px):
+    # Interaktives Liniendiagramm erstellen
+    fig = px.line(
+        df_bookings_year_customer, 
+        x="arrival_date_month",      # Die X-Achse (deine chronologischen Monate)
+        y="value",                   # Die Y-Achse (deine gezählten Buchungen)
+        color="customer_type",       # Erzeugt pro Kundentyp eine eigene farbige Linie
+        title="Trend der Buchungen im Jahresverlauf nach Kundentyp",
+        labels={
+            "arrival_date_month": "Ankunftsmonat",
+            "value": "Anzahl Buchungen",
+            "customer_type": "Kundentyp"
+        },
+        template="plotly_white"      # Cleanerer, moderner Hintergrund
+    )
+
+    # Schickes interaktives Feintuning
+    fig.update_layout(
+        hovermode="x unified",       # Zeigt alle Kundentypen im selben Monat gleichzeitig beim Drüberfahren
+        xaxis_title="Monat",
+        yaxis_title="Realisierte Buchungen"
+    )
+
+    # Diagramm im Jupyter Notebook / Dashboard anzeigen
+    fig.show()
     return
 
 
@@ -493,7 +561,7 @@ def _(mo):
 def _(bookings, go, mo, pd, px):
     chan_order_c = bookings["distribution_channel"].value_counts().index.tolist()
     cancel_chan_df = (
-        bookings.groupby("distribution_channel")["is_canceled"].mean() * 100
+        bookings.groupby("distribution_channel")["is_canceled"].mean() * 100        #nach dist chanel groupen, is:c ist 0 oder 1 also mean() berechnen
     ).rename_axis("channel").reset_index(name="cancel_pct")
     c_cancel_by_channel = px.bar(
         cancel_chan_df, x="channel", y="cancel_pct",
@@ -520,18 +588,18 @@ def _(bookings, go, mo, pd, px):
 
     realised_match = bookings[bookings["is_canceled"] == 0].copy()
     realised_match["room_match"] = (
-        realised_match["reserved_room_type"] == realised_match["assigned_room_type"]
+        realised_match["reserved_room_type"] == realised_match["assigned_room_type"]        #df mit maske: reserviert = bekommen
     )
     match_sub = realised_match[realised_match["adr_per_adult"].between(0, 250)].copy()
     match_sub["match_label"] = match_sub["room_match"].map(
-        {True: "Reserved = assigned", False: "Reserved ≠ assigned"}
+        {True: "Reserved = assigned", False: "Reserved ≠ assigned"}                 #mit map() true und false in lesbare überschirften übersetzen
     )
 
     c_mismatch_adr = go.Figure()
     for label in ["Reserved = assigned", "Reserved ≠ assigned"]:
-        _sub = match_sub.loc[match_sub["match_label"] == label, "adr_per_adult"]
-        c_mismatch_adr.add_trace(go.Box(
-            name=label, x=[label],
+        _sub = match_sub.loc[match_sub["match_label"] == label, "adr_per_adult"]        #suchte alle zeilen in denen match label = (das was gerade iteriert wird) und grabed die spalte "adr_per_adult"
+        c_mismatch_adr.add_trace(go.Box(                                            #_sub ist eine series mit nur adr werten  
+            name=label, x=[label],                                                      #aus dieser Series einen boxplot machen um zu vergleichen ob missmatch günstiger sind (=rabatt)
             q1=[float(_sub.quantile(0.25))], median=[float(_sub.median())],
             q3=[float(_sub.quantile(0.75))],
             lowerfence=[float(_sub.quantile(0.05))],
