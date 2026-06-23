@@ -265,13 +265,11 @@ def _(
 
 @app.cell(hide_code=True)
 def _(max_revenue, mo, optimal_protected_high_fare_rooms):
-    mo.md(
-        rf"""
+    mo.md(rf"""
     Optimal number of high fare rooms to protect: {optimal_protected_high_fare_rooms}
 
     Maximum expected revenue: {max_revenue:.2f}
-    """
-    )
+    """)
     return
 
 

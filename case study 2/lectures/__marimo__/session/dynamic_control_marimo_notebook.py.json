@@ -1,0 +1,211 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.9",
+    "script_metadata_hash": null
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "1d0db38904205bec4d6f6f6a1f6cec3e",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "ddf1ddc7c988ccdedcf5f9bc2c62b7cf",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"case-2-notebook-2-dynamic-control\">Case 2 \u00b7 Notebook 2 \u2014 Dynamic Control</h1>\n<span class=\"paragraph\"><strong>Data-Driven Decisions in Practice \u00b7 D3 Applications \u00b7 SS 2026</strong></span>\n<span class=\"paragraph\"><em>Part 2 of 3</em> \u2014 what happens <strong>inside a single stay night</strong>. Extract\nthe booking strip, run a static-protection simulator against it, then\nintroduce the state-space index <marimo-tex class=\"arithmatex\">||(S = q / (\\tau\\,\\lambda)||)</marimo-tex> as the\nbridge from static to dynamic.</span>\n<table>\n<thead>\n<tr>\n<th>Notebook</th>\n<th>Focus</th>\n<th>Feeds</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>1 \u00b7 Data</td>\n<td>Booking curves, fare-class structure, EDA bridge</td>\n<td>Q1</td>\n</tr>\n<tr>\n<td><strong>2 \u00b7 Dynamic control</strong> <em>(you are here)</em></td>\n<td>Booking strips, static simulator, state-space S-index</td>\n<td>Q4 baseline</td>\n</tr>\n<tr>\n<td>3 \u00b7 Prediction models</td>\n<td>Cancellation classifier, calibration, <marimo-tex class=\"arithmatex\">||(q^{\\text{eff}}_t||)</marimo-tex> illustration</td>\n<td>Q2, Q4 advanced</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\"><em>If you have not seen Notebook 1 yet, start there for the demand and\npricing context. This notebook stands alone, but its policy choices\nonly make sense once the empirical structure from NB1 is in your head.</em></span>\n<blockquote>\n<span class=\"paragraph\"><strong>Where does dynamic policy matter most?</strong> NB1's \u00a79 cut analysis is\nthe direct answer: dynamic protection is only worth the operational\ncost where <strong>late and early bookings price differently</strong>.</span>\n<ul>\n<li><strong>City Hotel pooled all-year:</strong> late vs early medians are ~\u20ac85 vs\n  ~\u20ac81 \u2014 barely a class signal. A static rule is fine.</li>\n<li><strong>Resort Hotel in summer</strong> with a long cut (~150+ days): late\n  ~\u20ac100+, early ~\u20ac60. <em>This</em> is where dynamic protection earns its\n  keep \u2014 protect rooms for late high-fare bookings; release them\n  only after the deep-advance discount window closes.</li>\n</ul>\n<span class=\"paragraph\">The default below is Resort Hotel on a peak-summer night for exactly\nthis reason. Switch to City to see how flat the simulator looks when\nthe underlying class signal is weak.</span>\n</blockquote></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "28bbf2d42641c0eae6fff889fbcdb043",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"loading-the-data\">Loading the data</h2></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "712a2ce4dfdd4444abb49a44f807b9b2",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "52f51c19d2e2f24441dc5081610659ce",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"3-extracting-booking-strips-from-real-data\">\u00a73 \u00b7 Extracting Booking Strips from Real Data</h2>\n<span class=\"paragraph\">A <strong>booking strip</strong> is the slide-4 idea: focus on <em>one</em> arrival date,\nextract every booking whose stay covers that night, and sort them by\nbooking date. The result is a synthetic time-series of decision moments\n\u2014 exactly the kind of stream Clara would see in real time.</span>\n<span class=\"paragraph\">Pick a stay date below. The widget filters the dataset and renders the\nstrip as a sortable table plus an arrival-timing chart. This is the\nraw material for every dynamic decision rule we build later.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "6ce813e098cdb706b54b07ce8eb9b7e2",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "937e0e825230a37228460aefc179c8ea",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "d18a37e583f0decc2f5d57853caf70b6",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "8a00b5ad99bde04bdfa18d17987ad530",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "b728b2f571893c559ff79224132bbf4f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"4-implementing-adaptive-booking-logic\">\u00a74 \u00b7 Implementing Adaptive Booking Logic</h2>\n<span class=\"paragraph\">Adaptive logic, in the slide's terms, is four moves:</span>\n<ol>\n<li><strong>Track available inventory</strong> every day along the booking horizon.</li>\n<li><strong>Prioritise high-paying</strong> customers \u2014 protect rooms for them.</li>\n<li><strong>Stop accepting low-fare requests</strong> when remaining-demand risk is high.</li>\n<li><strong>Allow overbooking</strong> when cancellations are likely.</li>\n</ol>\n<span class=\"paragraph\">The trade-off is named on the slide: <strong>spoilage vs. spillage</strong>.</span>\n<ul>\n<li><em>Spoilage</em>: an empty room you should have sold (too restrictive).</li>\n<li><em>Spillage</em>: a paying guest you turned away because you protected\n  too aggressively, or a walk-away because you overbooked too much.</li>\n</ul>\n<span class=\"paragraph\">Capacity is <strong>given</strong> \u2014 it is the room count of the chosen type on\nthe chosen night. Pick it once from the dropdown below; the same\nvalue drives both the \u00a74a decision surface and the \u00a74b drill-down.\nYour decision variables are the <strong>ADR threshold</strong> splitting low- vs\nhigh-fare and the <strong>protection level</strong> for the high-fare class.\n\u00a74a shows the entire decision surface (revenue over the\n<em>split \u00d7 protection</em> plane); \u00a74b lets you drill into one point and\nwatch the inventory trajectory request-by-request.</span>\n<blockquote>\n<span class=\"paragraph\"><strong>Known simplification \u2014 cancellations.</strong> The simulator below\nprocesses the strip in chronological booking order and accepts\neach booking exactly once; it never <em>releases</em> rooms when a\nbooking later cancels. That ignores the cancellation column\nentirely. A realistic policy has to choose: release rooms at the\ncancellation moment? Hold them as overbooking buffer? Use them\nto feed a waitlist? <strong>Q2 explicitly invites you to design that\nrelease mechanism</strong> \u2014 the simulator here is the no-release\nbaseline that any improvement should beat.</span>\n</blockquote>\n<h3 id=\"4a-revenue-surface-over-the-decision-plane\">\u00a74a \u00b7 Revenue surface over the decision plane</h3></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "d6da02f2b65076e6e651b6b16d8bb1cd",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "b490cdf5204eba30f6b6a5e876d06423",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "1a4874109b755ea3c184302646c6295b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>How to read it.</strong> Each tile is one full pass of the \u00a74 admission\npolicy over the booking strip; colour is the revenue that policy\nwould have realised. The <strong>red \u2605</strong> marks the optimum <em>given this\nsingle demand realisation</em>. What matters more than the absolute\noptimum:</span>\n<ul>\n<li><strong>How flat is the plateau around the optimum?</strong> A wide flat\n  region means the policy is robust to mis-specifying split or\n  protection by a few units. A sharp peak means the calibration\n  has to be precise. Real-world Q4 policies should prefer the flat\n  regions.</li>\n<li><strong>How does the optimum migrate when you switch capacity?</strong> Flip\n  the capacity dropdown above between 100 and 140 and watch the\n  star travel \u2014 as capacity grows, protection becomes less critical\n  and the threshold matters more. This is the structural reason\n  revenue management is a \"tight-capacity\" problem.</li>\n</ul>\n<span class=\"paragraph\">The drill-down below uses the <strong>same capacity</strong> picked above; the\nsplit and protection sliders let you inspect the inventory\ntrajectory for any single cell of the surface.</span>\n<h3 id=\"4b-drill-into-a-single-split-protection-point\">\u00a74b \u00b7 Drill into a single (split, protection) point</h3></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "3d317b814a1ed67444fd2465a5f8dcc1",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "db628ff5bcd709b20487dd0b55d8b550",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "de0379b5fe3defa10498042bb1da7587",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Move the protection slider. You will see:</span>\n<ul>\n<li>Low protection \u2192 <strong>spillage</strong> when too many low-fare bookings consume\n  capacity before the high-fare requests arrive.</li>\n<li>High protection \u2192 <strong>spoilage</strong> because low-fare requests are rejected\n  that you cannot replace with high-fare demand.</li>\n</ul>\n<span class=\"paragraph\">The static optimum is <em>somewhere in between</em> and depends on the demand\nrealisation. A dynamic rule replaces the constant protection number\nwith a <strong>state-dependent</strong> one \u2014 which is the topic of the next section.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "80b9eb365794cba8d35b63b7cce4ba45",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"45-calibrating-the-arrival-rate\">\u00a74.5 \u00b7 Calibrating the arrival rate</h2>\n<span class=\"paragraph\">Before any dynamic decision rule, the single most useful number you\ncan read off the strip is <strong>how fast bookings arrive on average</strong>.\nThat number, <marimo-tex class=\"arithmatex\">||(\\hat\\lambda||)</marimo-tex>, is what the state-space index in \u00a75\nuses as a yardstick for \"balanced\" vs \"starved\" vs \"drowning\".</span>\n<span class=\"paragraph\">Two questions to ask the data:</span>\n<ol>\n<li><strong>Point estimate.</strong> Average arrivals per day across the booking\n   horizon:</li>\n</ol>\n<span class=\"paragraph\">$$\n   \\hat\\lambda \\;=\\; \\frac{\\text{arrivals in the strip}}{\\text{lead-time horizon (days)}}\n   $$</span>\n<ol start=\"2\">\n<li><strong>Variation.</strong> Is the rate stable, or does it have bursts and lulls?\n   Bin the strip by week and look at the spread. If the standard\n   deviation of weekly arrivals is roughly <marimo-tex class=\"arithmatex\">||(\\sqrt{\\text{mean}}||)</marimo-tex> (the\n   Poisson reference), a single <marimo-tex class=\"arithmatex\">||(\\hat\\lambda||)</marimo-tex> is a defensible\n   summary. If it is much larger, your rate is <strong>overdispersed</strong> \u2014\n   clustering by channel, weekday, or season dominates, and Q4 needs\n   a more nuanced forecast than the constant we use below.</li>\n</ol></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "98968ab2eb961779dfb12c8572499d87",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "90ba2fb670bcff2c2424c93c3752cb0e",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"5-a-state-space-for-dynamic-control\">\u00a75 \u00b7 A State Space for Dynamic Control</h2>\n<span class=\"paragraph\">The slide gives you a scalar <strong>booking-pressure index</strong> that compresses\nthe two relevant axes (rooms left, time left) into one number:</span>\n<marimo-tex class=\"arithmatex\">||[\nS \\;=\\; \\frac{\\text{rooms left}}{\\text{remaining days} \\;\\cdot\\; \\text{daily demand}}\n||]</marimo-tex><span class=\"paragraph\">Interpretation:</span>\n<ul>\n<li><marimo-tex class=\"arithmatex\">||(S &gt; 1||)</marimo-tex>: <strong>oversupplied</strong> \u2014 accept almost everything; risk is spoilage.</li>\n<li><marimo-tex class=\"arithmatex\">||(S \\approx 1||)</marimo-tex>: <strong>balanced</strong> \u2014 apply the static rule.</li>\n<li><marimo-tex class=\"arithmatex\">||(S &lt; 1||)</marimo-tex>: <strong>undersupplied</strong> \u2014 start protecting aggressively for high fare.</li>\n</ul>\n<span class=\"paragraph\">This is a <em>blunt</em> but powerful device. The slide warns it is non-linear\nin practice (high-value demand clusters late, channel mixes shift). It\nis your job in Q4 to decide <em>how</em> to use <marimo-tex class=\"arithmatex\">||(S||)</marimo-tex>: as a soft signal, a hard\nthreshold, or a multiplier on the static protection level.</span>\n<span class=\"paragraph\"><strong><marimo-tex class=\"arithmatex\">||(S||)</marimo-tex> is a diagnostic, not a policy artefact.</strong> It reads the\n<em>observed demand-vs-capacity balance</em> off the booking strip \u2014 it\ndoes <strong>not</strong> depend on the ADR threshold or protection level you\nhappen to pick in \u00a74. You then <em>use</em> <marimo-tex class=\"arithmatex\">||(S||)</marimo-tex> to design the policy.\nBelow we therefore compute <marimo-tex class=\"arithmatex\">||(S(t)||)</marimo-tex> along the natural booking pace\n(every request accepted until rooms run out), driven only by the\nstructural input <strong>capacity</strong>.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "cc3a69bb72f762713418d758230a91b6",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "6bba3098ef3f29f4fa98a13d9373dd05",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>What this chart actually shows.</strong> The green line is the\nbooking-pressure index under a \"natural\" trajectory \u2014 every request\naccepted until rooms run out. It is a property of <em>capacity vs\nobserved demand</em>, not of any specific admission policy. Three\nreadings:</span>\n<ul>\n<li><strong>Initial S level.</strong> Very high at the start (lots of time, lots\n  of capacity). If S stays well above 1 for most of the horizon,\n  the room type is structurally oversupplied for this night \u2014 the\n  policy can stay generous.</li>\n<li><strong>The black rule</strong> is the first booking date at which <marimo-tex class=\"arithmatex\">||(S &lt; 1||)</marimo-tex>.\n  That timestamp is your natural candidate for \"when to stop\n  accepting low fare and start protecting\" \u2014 i.e., a time-based\n  analogue of \u00a74's fixed protection level. Different capacities\n  shift this crossing earlier or later.</li>\n<li><strong>Where S ends up.</strong> A trajectory that dives steeply through 1\n  and stays low means demand will saturate well before arrival \u2014\n  protection should kick in <em>much</em> earlier than the crossing\n  suggests, because high-fare requests typically cluster late.</li>\n</ul>\n<span class=\"paragraph\"><em>Why the \u00a74 sliders don't show up here.</em> They drove the previous\nversion of this chart and made <marimo-tex class=\"arithmatex\">||(S||)</marimo-tex> look policy-dependent, which\ninverted the causality. The right mental model is: <strong>S informs\npolicy, not the other way round.</strong> Use the \u00a74 surface above to\npick a (split, protection) pair <em>given</em> what S tells you about\nstructural pressure.</span>\n<span class=\"paragraph\"><em>Methodological caution</em> (from the slide): the rule\n\"<marimo-tex class=\"arithmatex\">||(S&lt;1 \\Rightarrow \\text{reject low}||)</marimo-tex>\" is too coarse \u2014 high-value\ndemand clusters near arrival, so a Q4 write-up should justify a\nsofter translation (e.g. protection level scales with <marimo-tex class=\"arithmatex\">||(1/S||)</marimo-tex>, or\ntriggers only after S stays below 1 for <marimo-tex class=\"arithmatex\">||(k||)</marimo-tex> consecutive days).</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "cbd133396f8859dd946cbe270c1fa090",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"next-step\">Next step</h2>\n<span class=\"paragraph\">The <marimo-tex class=\"arithmatex\">||(S||)</marimo-tex>-index uses <em>naive</em> inventory (raw room count) and <em>average</em>\ndaily demand. Both can be replaced with predictions \u2014 that is the\nsubject of <strong>Notebook 3</strong>, which trains a cancellation classifier\nand shows what the cancellation-adjusted occupancy\n<marimo-tex class=\"arithmatex\">||(q^{\\text{eff}}_t||)</marimo-tex> looks like along a strip. Wiring those\npredictions back into the control rule is the case-work payoff\n(Q2 and Q4).</span></span>"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}

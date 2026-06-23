@@ -1,0 +1,250 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.9",
+    "script_metadata_hash": null
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "1d0db38904205bec4d6f6f6a1f6cec3e",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "5161fa9f7ad56485e76dd36525ee5b7a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"case-2-notebook-3-prediction-models-for-rm\">Case 2 \u00b7 Notebook 3 \u2014 Prediction Models for RM</h1>\n<span class=\"paragraph\"><strong>Data-Driven Decisions in Practice \u00b7 D3 Applications \u00b7 SS 2026</strong></span>\n<span class=\"paragraph\"><em>Part 3 of 3</em> \u2014 the prediction layer of the slide-2 maturity curve:\na leakage-aware <strong>cancellation classifier</strong>, calibration as the\nbridge from probability to decision, and one worked illustration\n(<marimo-tex class=\"arithmatex\">||(q^{\\text{eff}}_t||)</marimo-tex>, slide 9) of how a calibrated prediction plugs\ninto the dynamic state space from NB2.</span>\n<table>\n<thead>\n<tr>\n<th>Notebook</th>\n<th>Focus</th>\n<th>Feeds</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>1 \u00b7 Data</td>\n<td>Booking curves, fare-class structure, EDA bridge</td>\n<td>Q1</td>\n</tr>\n<tr>\n<td>2 \u00b7 Dynamic control</td>\n<td>Booking strips, static simulator, state-space S-index</td>\n<td>Q4 baseline</td>\n</tr>\n<tr>\n<td><strong>3 \u00b7 Prediction models</strong> <em>(you are here)</em></td>\n<td>Cancellation classifier, calibration, <marimo-tex class=\"arithmatex\">||(q^{\\text{eff}}_t||)</marimo-tex> illustration</td>\n<td>Q2, Q4 advanced</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\"><em>This notebook trains and explains the prediction pipeline. </em><em>It does\nnot wire predictions into a closed-loop control policy</em><em> \u2014 that\nintegration is Q4 territory. What this notebook gives you is a\ncalibrated <marimo-tex class=\"arithmatex\">||(\\hat{P}(\\text{cancel})||)</marimo-tex> you can plug into your own buffer\nor admission rule, plus one worked example showing what the resulting\ntrajectory looks like.</em></span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "edfdfb8034a19546828b390a91662eea",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"loading-the-data-and-extracting-a-strip\">Loading the data and extracting a strip</h2>\n<span class=\"paragraph\">Same loader as NB1/NB2, plus a self-contained strip extractor so this\nnotebook runs independently.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "712a2ce4dfdd4444abb49a44f807b9b2",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "a3eb59d7d33cc6ce5066ac438a8161b0",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "c4b682e01a3927d9106a0d9f62773958",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "67d34f081a648971c8aef13dd6cbad76",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"6-predictive-modelling-for-revenue-management\">\u00a76 \u00b7 Predictive Modelling for Revenue Management</h2>\n<span class=\"paragraph\">Slide 7 turns three operational questions into supervised-learning problems:</span>\n<table>\n<thead>\n<tr>\n<th>Question</th>\n<th>Target</th>\n<th>Task</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Will this booking cancel?</td>\n<td><code>is_canceled</code></td>\n<td>Classification</td>\n</tr>\n<tr>\n<td>What is the likely ADR of the next request?</td>\n<td><code>adr</code></td>\n<td>Regression</td>\n</tr>\n<tr>\n<td>How many more requests will arrive?</td>\n<td>counts by date</td>\n<td>Forecasting</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">We focus on the first because it has the cleanest pay-off in your case:\na calibrated cancellation probability <strong>directly</strong> feeds the\noverbooking buffer. The pipeline below is the standard scikit-learn\npattern you saw with the Airbnb-rent case \u2014 <code>ColumnTransformer</code> for\nnumeric/categorical, fit, evaluate.</span>\n<span class=\"paragraph\">The pipeline below is provided as a finished artefact \u2014 this part of\nthe course is not about tuning prediction pipelines, it is about\ndeploying their output as part of a decision rule. Read it, run it,\nand use the resulting cancellation probabilities downstream.</span>\n<h3 id=\"why-these-features-and-not-others\">Why these features, and not others</h3>\n<span class=\"paragraph\">Several columns in the raw CSV are <strong>only populated after the booking\ndecision has been made</strong>. Using them looks brilliant on a hold-out set\nand is useless in production. We drop them:</span>\n<table>\n<thead>\n<tr>\n<th>Column</th>\n<th>Why it leaks</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>reservation_status</code>, <code>reservation_status_date</code></td>\n<td>Direct labels of the outcome \u2014 these <em>are</em> the target</td>\n</tr>\n<tr>\n<td><code>assigned_room_type</code></td>\n<td>Determined at check-in, not at booking</td>\n</tr>\n<tr>\n<td><code>booking_changes</code></td>\n<td>Cumulative count over the booking's lifetime</td>\n</tr>\n<tr>\n<td><code>days_in_waiting_list</code></td>\n<td>Only known once the waiting period has ended</td>\n</tr>\n<tr>\n<td><code>country</code> (optional)</td>\n<td>High-cardinality and proxy for distribution channel; we drop it for generality</td>\n</tr>\n</tbody>\n</table>\n<span class=\"paragraph\">The remaining features are split into a numeric and a categorical\ngroup, each with its own preprocessing pipeline (median-impute + scale\nfor numerics, constant-impute + one-hot for categoricals). The two\npipelines are wired together with <code>ColumnTransformer</code> and fed into a\nRandom Forest classifier inside one <code>Pipeline</code>. The whole thing fits\nin one <code>.fit()</code> call and scores new requests in one <code>.predict_proba()</code>.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "394fbdf1a4110f9ab192bf1992ee96e2",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "ec328effe319d6b63b17493671e42caa",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "bc8c50ccdb7f7a02d045adcd40a9d9b0",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "2bf132dea9fef02d330749eabb28efd7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"playground-feel-which-features-carry-the-signal\">Playground \u2014 feel which features carry the signal</h3>\n<span class=\"paragraph\">Toggle features below to see how much each one contributes, and try a\ndifferent classifier to see how <em>calibration</em> changes even when AUC\nstays similar.</span>\n<blockquote>\n<span class=\"paragraph\"><strong>Scratch fit, not the reference model.</strong> This playground trains a\nseparate pipeline on a smaller subsample (8 000 rows, random seed 7)\nwith a faster classifier configuration. The \u00a76 reference model\nused downstream in \u00a78 is the one shown two cells above (10 000\nrows, 100 trees) and is <em>unaffected</em> by anything you do here. The\nAUC and Brier numbers below will not exactly match the reference.</span>\n</blockquote></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "6a282f7fc5ff11cc423deba31877e571",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "bb3142458de152e0f0440089d679917f",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "6b52dc93cde721749d3ce6f059be8b57",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Things worth trying:</span>\n<ul>\n<li><strong>Strip everything except <code>lead_time</code> and <code>deposit_type</code>.</strong> Watch\n  how much of the AUC survives. The result tells you which signals\n  are actually doing the work.</li>\n<li><strong>Switch from Random Forest to Logistic Regression.</strong> AUC drops a\n  little; calibration often improves. For decision rules that <em>use</em>\n  the probability, the trade may be worth it.</li>\n<li><strong>Add <code>market_segment</code> and <code>distribution_channel</code>.</strong> Channel mix\n  carries a lot of cancellation risk in this dataset.</li>\n<li><strong>Drop <code>adr</code>.</strong> Notice how the model still works \u2014 the strongest\n  cancellation signals are not price-related.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "77585cf083b075ce6c1d75387b89880f",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">Calibration matters more than AUC for any decision that uses the\nprobability as a <em>number</em> rather than just as a ranking. A weaker\nmodel that says what it means tends to beat a stronger model that is\nover-confident.</span>\n<h3 id=\"translating-hatptextcancel-into-operational-quantities\">Translating <marimo-tex class=\"arithmatex\">||(\\hat{P}(\\text{cancel})||)</marimo-tex> into operational quantities</h3>\n<span class=\"paragraph\">The model returns one number per booking: the predicted probability of\ncancellation. Three things you can do with it:</span>\n<ol>\n<li><strong>Expected check-ins from a current book of business.</strong> If you have\n   <marimo-tex class=\"arithmatex\">||(n||)</marimo-tex> bookings on the books with predicted cancellation probabilities\n   <marimo-tex class=\"arithmatex\">||(\\hat{p}_1, \\dots, \\hat{p}_n||)</marimo-tex>, the expected number of <em>arriving</em>\n   guests is</li>\n</ol>\n<span class=\"paragraph\">$<marimo-tex class=\"arithmatex\">||(\\mathbb{E}[\\text{check-ins}] = \\sum_{i=1}^n (1 - \\hat{p}_i)||)</marimo-tex>$</span>\n<span class=\"paragraph\">This is the <marimo-tex class=\"arithmatex\">||(q^{\\text{eff}}_t||)</marimo-tex> quantity from slide 9, which we\n   plot live in \u00a78 below.</span>\n<ol start=\"2\">\n<li><strong>Static overbooking buffer.</strong> The simplest rule: accept extra\n   bookings until the expected check-ins equal capacity. If the\n   average cancellation probability on a representative night is\n   <marimo-tex class=\"arithmatex\">||(\\bar{p}||)</marimo-tex>, then to fill <marimo-tex class=\"arithmatex\">||(c||)</marimo-tex> rooms in expectation you sell</li>\n</ol>\n<span class=\"paragraph\">$<marimo-tex class=\"arithmatex\">||(n^\\star = \\frac{c}{1 - \\bar{p}}.||)</marimo-tex>$</span>\n<span class=\"paragraph\">The buffer is <marimo-tex class=\"arithmatex\">||(n^\\star - c||)</marimo-tex>. Worked example: 100 rooms, <marimo-tex class=\"arithmatex\">||(\\bar{p} =\n   0.25 \\Rightarrow n^\\star = 133||)</marimo-tex>, buffer of 33. Whether 33 is the\n   <em>right</em> buffer depends on the walk-cost, the spread of <marimo-tex class=\"arithmatex\">||(\\hat{p}||)</marimo-tex>,\n   and your tolerance for walk-aways \u2014 Q2 territory.</span>\n<ol start=\"3\">\n<li><strong>Per-request decision rule.</strong> When a low-fare request arrives at\n   time <marimo-tex class=\"arithmatex\">||(t||)</marimo-tex>, you can ask: does accepting it push expected check-ins\n   above the capacity-plus-tolerated-walk-rate threshold? This is a\n   fully dynamic version of (2) and is exactly the kind of policy\n   Q4 invites you to design.</li>\n</ol></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "a5f95153ab7463fd2d0dc6de503d1e12",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"using-the-model-on-a-new-request\">Using the model on a new request</h3>\n<span class=\"paragraph\">You score a new request with one call:</span>\n<div class=\"language-python codehilite\"><pre><span></span><code><span class=\"n\">p_cancel</span> <span class=\"o\">=</span> <span class=\"n\">pipe</span><span class=\"o\">.</span><span class=\"n\">predict_proba</span><span class=\"p\">(</span><span class=\"n\">new_request_df</span><span class=\"p\">[</span><span class=\"n\">feat_cols</span><span class=\"p\">])[:,</span> <span class=\"mi\">1</span><span class=\"p\">]</span>\n</code></pre></div>\n<span class=\"paragraph\">where <code>new_request_df</code> is a DataFrame with the same columns the model\nwas trained on. <code>pipe</code> carries its own preprocessing, so you do <em>not</em>\none-hot or impute by hand. In \u00a78 we use exactly this call against the\nbooking strip and turn the per-request probabilities into a\ncancellation-adjusted occupancy trajectory.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "59dc615bfc3cef4d4b4d1591ba55ded4",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"7-bringing-it-together-raw-model-decision\">\u00a77 \u00b7 Bringing It Together: Raw \u2192 Model \u2192 Decision</h2>\n<span class=\"paragraph\">The pipeline you are now wiring up is:</span>\n<div class=\"language-scdoc codehilite\"><pre><span></span><code>    hotel_bookings.csv\n          \u2502\n          \u25bc\n    feature engineering           \u2500\u2500\u25ba  segment / season / channel cuts\n          \u2502\n          \u25bc\n    prediction model              \u2500\u2500\u25ba  P(cancel), P(high-fare arrival), \u2026\n          \u2502\n          \u25bc\n    decision logic                \u2500\u2500\u25ba  protection level(t), overbooking buffer\n          \u2502\n          \u25bc\n    booking-strip simulation      \u2500\u2500\u25ba  realised revenue, rejections\n</code></pre></div>\n<span class=\"paragraph\">Each arrow is a place where you make <strong>a methodological choice</strong>.\nThe week-1 work fixed the last arrow; the work for week 2 is to make\nthe middle two transparent and defensible.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "7ac1b362bff6f741e3a0debaeaef059a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"8-prediction-augmented-state-space\">\u00a78 \u00b7 Prediction-Augmented State Space</h2>\n<span class=\"paragraph\">Slide 9 closes the loop. The naive state index uses <em>room count</em> and\n<em>time \u00d7 average demand</em>. Both can be replaced by predictions:</span>\n<marimo-tex class=\"arithmatex\">||[\\text{Booking pressure} = \\frac{q_t^{\\text{eff}}}{\\widehat{D}_{\\text{remaining}}} \\quad \\text{where} \\quad q_t^{\\text{eff}} = \\sum_i q_i (1 - \\hat{P}(\\text{cancel}_i))||]</marimo-tex><ul>\n<li><marimo-tex class=\"arithmatex\">||(q_t^{\\text{eff}}||)</marimo-tex> \u2014 <strong>cancellation-adjusted occupancy</strong>: discount\n  each currently-on-the-books reservation by its predicted survival\n  probability.</li>\n<li><marimo-tex class=\"arithmatex\">||(\\widehat{D}_{\\text{remaining}}||)</marimo-tex> \u2014 <strong>forecast of remaining arrivals</strong>:\n  not the historical mean, but a prediction conditioned on the current\n  booking pace, day-of-week, season, etc.</li>\n</ul>\n<span class=\"paragraph\">Below we compute <marimo-tex class=\"arithmatex\">||(q_t^{\\text{eff}}||)</marimo-tex> on the live strip using the\ncancellation model from \u00a76 and contrast the <em>raw</em> inventory\ntrajectory with the <em>risk-adjusted</em> one.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "7214896964f37c07f0a636a2b2cd6075",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "2fb4a23a13995a45f9f5b49b93dee957",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">The gap between the dotted and the solid line <strong>is your overbooking\nheadroom</strong>. At any point along the strip, the naive curve says \"we have\nsold this many rooms\"; the solid curve says \"we expect this many guests\nto actually show up\". The difference grows as more risky bookings (high\ncancellation probability) enter the strip.</span>\n<span class=\"paragraph\">This is <em>exactly</em> the data structure you need to drive Q4: at every\nrequest, check <marimo-tex class=\"arithmatex\">||(q_t^{\\text{eff}}||)</marimo-tex> against capacity, not the raw count.</span>\n<span class=\"paragraph\"><em>Forecast caveat.</em> We did not implement <marimo-tex class=\"arithmatex\">||(\\widehat{D}_{\\text{remaining}}||)</marimo-tex>\nabove \u2014 that requires an arrival-rate model conditioned on calendar\nposition and current booking pace, which is <strong>a deliberate exercise\nleft to you</strong>. Hints:</span>\n<ul>\n<li>Empirical booking curves (Notebook 1) give you a base rate.</li>\n<li>Day-of-week and month effects are visible in the data.</li>\n<li>The simplest forecast: scale historical bookings-per-remaining-day\n  by a seasonal multiplier.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "5fbea6a6775ffd84995c735aa3188d89",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"85-from-pcancel-to-an-overbooking-buffer-q2-bridge\">\u00a78.5 \u00b7 From P(cancel) to an overbooking buffer (Q2 bridge)</h3>\n<span class=\"paragraph\">The cancellation probabilities can be turned into a concrete buffer\nnumber using the formula from \u00a76:</span>\n<marimo-tex class=\"arithmatex\">||[n^\\star = \\frac{c}{1 - \\bar{p}}, \\qquad \\text{buffer} = n^\\star - c||]</marimo-tex><span class=\"paragraph\">where <marimo-tex class=\"arithmatex\">||(c||)</marimo-tex> is capacity and <marimo-tex class=\"arithmatex\">||(\\bar{p}||)</marimo-tex> is the mean predicted cancellation\nprobability for the current strip. The sliders below let you set the\ncapacity for this night and inspect the implied buffer; the expected\nwalk-aways follow from the variance of the per-row probabilities.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "c0bd04db88b824e62c9af396faedea2b",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "ecfG",
+      "code_hash": "402d4f139caba885641ab62c5b56d5e2",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "Pvdt",
+      "code_hash": "216987e92f3f7f71e24a23f9e4943508",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"9-scikit-learn-workflow-refresher\">\u00a79 \u00b7 Scikit-Learn Workflow Refresher</h2>\n<span class=\"paragraph\">The closing slide reminds you of the canonical pipeline:</span>\n<ol>\n<li><strong>Select</strong> rows and feature columns (mind leakage).</li>\n<li><strong>Preprocess</strong> \u2014 impute missing values, encode categoricals.</li>\n<li><strong>Split</strong> into train and test with <code>train_test_split</code>.</li>\n<li><strong>Fit</strong> a classifier or regressor.</li>\n<li><strong>Evaluate</strong> with the right metric for your downstream decision.</li>\n<li><strong>Wrap</strong> preprocessing + model in a <code>Pipeline</code> so you can score\n   new data with one call.</li>\n<li><strong>Validate</strong> with cross-validation; check for overfitting.</li>\n</ol>\n<span class=\"paragraph\">Compare against the \u00a76 cell above \u2014 every step is there. Three\npractical tips you will not regret following in your write-up:</span>\n<ul>\n<li><strong>Stratify</strong> the train/test split when classes are imbalanced.</li>\n<li><strong>Report the metric that matches the cost structure.</strong> For\n  overbooking, <em>Brier score</em> and calibration matter more than accuracy.</li>\n<li><strong>Document feature exclusions.</strong> A one-paragraph \"what we did not\n  use, and why\" is worth more than another 0.01 of AUC.</li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZBYS",
+      "code_hash": "f12151432bd7ebd7f14fe783d5fe61cf",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"methods-recap-across-all-three-notebooks\">Methods Recap (across all three notebooks)</h2>\n<span class=\"paragraph\">You have now seen each method the week-2 deck introduces, executed on\nthe actual Viador data:</span>\n<ul>\n<li>empirical booking curves and joint ADR \u00d7 lead-time structure <em>(NB1)</em>;</li>\n<li>booking-strip extraction for a chosen stay night <em>(NB2)</em>;</li>\n<li>inventory simulation with a fixed protection level, surfaced as a\n  spoilage/spillage trade-off <em>(NB2)</em>;</li>\n<li>the state-space index <marimo-tex class=\"arithmatex\">||(S = \\dfrac{q}{\\tau\\,\\lambda}||)</marimo-tex> <em>(NB2)</em>;</li>\n<li>a leakage-aware sklearn pipeline for cancellation probability,\n  evaluated by AUC <em>and</em> calibration <em>(NB3)</em>;</li>\n<li>the cancellation-adjusted occupancy <marimo-tex class=\"arithmatex\">||(q^{\\text{eff}}_t||)</marimo-tex> <em>(NB3)</em>.</li>\n</ul>\n<span class=\"paragraph\">None of these <em>are</em> answers. They are the moving parts. The case\nwrite-up is about which moving parts you choose, how you parameterise\nthem, and how you defend the choices given the data \u2014 including the\npieces of analysis (per-hotel, per-season, channel-level) that these\nnotebooks deliberately keep pooled.</span>\n<span class=\"paragraph\">Good luck. If you get stuck, post in the channel \u2014 I will read and\nreply asynchronously.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}
