@@ -1,0 +1,269 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.9",
+    "script_metadata_hash": null
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "aaadbbe231df4b283460b523578ed53c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "1dffa4f242b646301d8a3aa31f79ca18",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"cashlog-basic-analysis\">CashLog Basic Analysis</h1>\n<span class=\"paragraph\">We will use this notebook to implement a basic version of CashLog's decision problem by performing the following steps:</span>\n<ol>\n<li>Define and load relevent model parameters</li>\n<li>Define and initialize the decision variables</li>\n<li>Define and implement the objective function</li>\n<li>Define and implement the relevant constraints</li>\n<li>Solve the problem and anlyse the results</li>\n</ol></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "94c4f5c32a10445cc2828fbd3bf8f764",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"the-decision-problem-can-be-modeled-in-the-sense-of-a-mip\">The decision problem can be modeled in the sense of a MIP</h3></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "9b3b3bf0b6d077d95a86c26d30e34c30",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "0ba823020b4a2f4fcb5a5381e0e79028",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"define-and-load-model-parameters\">Define and load model parameters</h3>\n<span class=\"paragraph\"><marimo-tex class=\"arithmatex\">||(W:||)</marimo-tex> Set of warehouses<br>\n<marimo-tex class=\"arithmatex\">||(R:||)</marimo-tex> Set of customer regions<br>\n<marimo-tex class=\"arithmatex\">||(S:||)</marimo-tex> Set of links between warehouses and regions<br></span>\n<span class=\"paragraph\"><marimo-tex class=\"arithmatex\">||(f_i:||)</marimo-tex> Fixed costs of warehouse <marimo-tex class=\"arithmatex\">||(i||)</marimo-tex><br>\n<marimo-tex class=\"arithmatex\">||(c_{ij}:||)</marimo-tex> Costs if region <marimo-tex class=\"arithmatex\">||(j||)</marimo-tex> is served by warehouse <marimo-tex class=\"arithmatex\">||(i||)</marimo-tex><br></span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "d0e1c5807a69f46cf65a53d8123a0bf1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\">test</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "8d26987ce7af6f7238f56a249c26ef91",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='Xref-3' random-id='c9dca0b4-014b-89bf-6d12-2f920edc0231'><marimo-tabs data-initial-value='&quot;&quot;' data-label='null' data-tabs='[&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eWarehouses&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;,&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRegions&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;,&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eShifts&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;]' data-orientation='&quot;horizontal&quot;'><div data-kind='tab'><marimo-ui-element object-id='Xref-0' random-id='5fbba29a-9a4a-04a5-ad94-174394bb034a'><marimo-table data-initial-value='[]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eWarehouses&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-data='&quot;[{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;city&#92;&quot;:&#92;&quot;Vitoria&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:1344000,&#92;&quot;lat&#92;&quot;:42.8465088,&#92;&quot;lon&#92;&quot;:-2.6724025},{&#92;&quot;warehouseID&#92;&quot;:2,&#92;&quot;city&#92;&quot;:&#92;&quot;Albacete&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:2580000,&#92;&quot;lat&#92;&quot;:38.9890121,&#92;&quot;lon&#92;&quot;:-1.8548699},{&#92;&quot;warehouseID&#92;&quot;:3,&#92;&quot;city&#92;&quot;:&#92;&quot;Alicante&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:4572000,&#92;&quot;lat&#92;&quot;:38.353738,&#92;&quot;lon&#92;&quot;:-0.4901846},{&#92;&quot;warehouseID&#92;&quot;:4,&#92;&quot;city&#92;&quot;:&#92;&quot;Almeria&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:2580000,&#92;&quot;lat&#92;&quot;:36.8414197,&#92;&quot;lon&#92;&quot;:-2.4628135},{&#92;&quot;warehouseID&#92;&quot;:5,&#92;&quot;city&#92;&quot;:&#92;&quot;Avila&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:1344000,&#92;&quot;lat&#92;&quot;:40.656478,&#92;&quot;lon&#92;&quot;:-4.7002172},{&#92;&quot;warehouseID&#92;&quot;:8,&#92;&quot;city&#92;&quot;:&#92;&quot;Barcelona&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:15012000,&#92;&quot;lat&#92;&quot;:41.3828939,&#92;&quot;lon&#92;&quot;:2.1774322},{&#92;&quot;warehouseID&#92;&quot;:9,&#92;&quot;city&#92;&quot;:&#92;&quot;Burgos&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:1344000,&#92;&quot;lat&#92;&quot;:42.343926,&#92;&quot;lon&#92;&quot;:-3.696977},{&#92;&quot;warehouseID&#92;&quot;:10,&#92;&quot;city&#92;&quot;:&#92;&quot;Caceres&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:2580000,&#92;&quot;lat&#92;&quot;:39.4745175,&#92;&quot;lon&#92;&quot;:-6.3716761},{&#92;&quot;warehouseID&#92;&quot;:13,&#92;&quot;city&#92;&quot;:&#92;&quot;Ciudad real&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:1344000,&#92;&quot;lat&#92;&quot;:38.95975095,&#92;&quot;lon&#92;&quot;:-3.8828283392159584},{&#92;&quot;warehouseID&#92;&quot;:14,&#92;&quot;city&#92;&quot;:&#92;&quot;Cordoba&#92;&quot;,&#92;&quot;fixedCosts&#92;&quot;:2580000,&#92;&quot;lat&#92;&quot;:37.8845813,&#92;&quot;lon&#92;&quot;:-4.7760138}]&quot;' data-total-rows='42' data-total-columns='4' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='10' data-field-types='[[&quot;city&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;fixedCosts&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;lat&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;lon&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-show-filters='true' data-show-download='false' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[[&quot;warehouseID&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div><div data-kind='tab'><marimo-ui-element object-id='Xref-1' random-id='910acac1-4c0b-97e7-0ddd-a049a2775b1b'><marimo-table data-initial-value='[]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eRegions&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-data='&quot;[{&#92;&quot;regionID&#92;&quot;:1,&#92;&quot;zipCode&#92;&quot;:40297,&#92;&quot;city&#92;&quot;:&#92;&quot;SANCHONU&#92;&#92;u00d1O&#92;&quot;,&#92;&quot;lat&#92;&quot;:41.3236,&#92;&quot;lon&#92;&quot;:-4.305,&#92;&quot;yearlyDemand&#92;&quot;:1511,&#92;&quot;minutesPerStop&#92;&quot;:15.76116585552314},{&#92;&quot;regionID&#92;&quot;:2,&#92;&quot;zipCode&#92;&quot;:25220,&#92;&quot;city&#92;&quot;:&#92;&quot;BELL-LLOCH&#92;&quot;,&#92;&quot;lat&#92;&quot;:41.6333,&#92;&quot;lon&#92;&quot;:0.7833,&#92;&quot;yearlyDemand&#92;&quot;:2535,&#92;&quot;minutesPerStop&#92;&quot;:14.250221131103132},{&#92;&quot;regionID&#92;&quot;:3,&#92;&quot;zipCode&#92;&quot;:45695,&#92;&quot;city&#92;&quot;:&#92;&quot;ALBERCHE DEL CAUDILLO&#92;&quot;,&#92;&quot;lat&#92;&quot;:39.9189,&#92;&quot;lon&#92;&quot;:-4.6801,&#92;&quot;yearlyDemand&#92;&quot;:679,&#92;&quot;minutesPerStop&#92;&quot;:12.66690422028397},{&#92;&quot;regionID&#92;&quot;:4,&#92;&quot;zipCode&#92;&quot;:10335,&#92;&quot;city&#92;&quot;:&#92;&quot;PERALEDA DE LA MATA&#92;&quot;,&#92;&quot;lat&#92;&quot;:39.8529,&#92;&quot;lon&#92;&quot;:-5.4606,&#92;&quot;yearlyDemand&#92;&quot;:3756,&#92;&quot;minutesPerStop&#92;&quot;:12.851194969687532},{&#92;&quot;regionID&#92;&quot;:5,&#92;&quot;zipCode&#92;&quot;:1009,&#92;&quot;city&#92;&quot;:&#92;&quot;VITORIA-GASTEIZ&#92;&quot;,&#92;&quot;lat&#92;&quot;:42.8535,&#92;&quot;lon&#92;&quot;:-2.685,&#92;&quot;yearlyDemand&#92;&quot;:23891,&#92;&quot;minutesPerStop&#92;&quot;:12.095209182802485},{&#92;&quot;regionID&#92;&quot;:6,&#92;&quot;zipCode&#92;&quot;:10530,&#92;&quot;city&#92;&quot;:&#92;&quot;SERRADILLA&#92;&quot;,&#92;&quot;lat&#92;&quot;:39.8283,&#92;&quot;lon&#92;&quot;:-6.1404,&#92;&quot;yearlyDemand&#92;&quot;:256,&#92;&quot;minutesPerStop&#92;&quot;:17.912664126038095},{&#92;&quot;regionID&#92;&quot;:7,&#92;&quot;zipCode&#92;&quot;:27310,&#92;&quot;city&#92;&quot;:&#92;&quot;SAN CLODIO&#92;&quot;,&#92;&quot;lat&#92;&quot;:42.4225,&#92;&quot;lon&#92;&quot;:-7.3047,&#92;&quot;yearlyDemand&#92;&quot;:682,&#92;&quot;minutesPerStop&#92;&quot;:21.883566954632432},{&#92;&quot;regionID&#92;&quot;:8,&#92;&quot;zipCode&#92;&quot;:26230,&#92;&quot;city&#92;&quot;:&#92;&quot;CASALARREINA&#92;&quot;,&#92;&quot;lat&#92;&quot;:42.548,&#92;&quot;lon&#92;&quot;:-2.9119,&#92;&quot;yearlyDemand&#92;&quot;:2006,&#92;&quot;minutesPerStop&#92;&quot;:16.588467835598603},{&#92;&quot;regionID&#92;&quot;:9,&#92;&quot;zipCode&#92;&quot;:13248,&#92;&quot;city&#92;&quot;:&#92;&quot;ALHAMBRA&#92;&quot;,&#92;&quot;lat&#92;&quot;:38.8992,&#92;&quot;lon&#92;&quot;:-3.0526,&#92;&quot;yearlyDemand&#92;&quot;:1677,&#92;&quot;minutesPerStop&#92;&quot;:13.212946885113515},{&#92;&quot;regionID&#92;&quot;:10,&#92;&quot;zipCode&#92;&quot;:17700,&#92;&quot;city&#92;&quot;:&#92;&quot;JUNQUERA, LA&#92;&quot;,&#92;&quot;lat&#92;&quot;:42.4191,&#92;&quot;lon&#92;&quot;:2.8734,&#92;&quot;yearlyDemand&#92;&quot;:2820,&#92;&quot;minutesPerStop&#92;&quot;:13.882386542587035}]&quot;' data-total-rows='515' data-total-columns='6' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='10' data-field-types='[[&quot;zipCode&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;city&quot;,[&quot;string&quot;,&quot;object&quot;]],[&quot;lat&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;lon&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;yearlyDemand&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;minutesPerStop&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-show-filters='true' data-show-download='false' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[[&quot;regionID&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div><div data-kind='tab'><marimo-ui-element object-id='Xref-2' random-id='ddb52629-f5ef-2d69-0e31-dff4e1972204'><marimo-table data-initial-value='[]' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eShifts&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-data='&quot;[{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:74,&#92;&quot;transportationCosts&#92;&quot;:592.6780395507812,&#92;&quot;travelTime&#92;&quot;:592.6780395507812},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:268,&#92;&quot;transportationCosts&#92;&quot;:692.6212768554688,&#92;&quot;travelTime&#92;&quot;:692.6212768554688},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:224,&#92;&quot;transportationCosts&#92;&quot;:797.767822265625,&#92;&quot;travelTime&#92;&quot;:797.767822265625},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:481,&#92;&quot;transportationCosts&#92;&quot;:89.0,&#92;&quot;travelTime&#92;&quot;:89.0},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:478,&#92;&quot;transportationCosts&#92;&quot;:263.6766052246094,&#92;&quot;travelTime&#92;&quot;:263.6766052246094},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:484,&#92;&quot;transportationCosts&#92;&quot;:90.0,&#92;&quot;travelTime&#92;&quot;:90.0},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:509,&#92;&quot;transportationCosts&#92;&quot;:345.8382873535156,&#92;&quot;travelTime&#92;&quot;:345.8382873535156},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:129,&#92;&quot;transportationCosts&#92;&quot;:264.4642639160156,&#92;&quot;travelTime&#92;&quot;:264.4642639160156},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:167,&#92;&quot;transportationCosts&#92;&quot;:796.5131225585938,&#92;&quot;travelTime&#92;&quot;:796.5131225585938},{&#92;&quot;warehouseID&#92;&quot;:1,&#92;&quot;regionID&#92;&quot;:495,&#92;&quot;transportationCosts&#92;&quot;:693.9157104492188,&#92;&quot;travelTime&#92;&quot;:693.9157104492188}]&quot;' data-total-rows='21630' data-total-columns='2' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='true' data-page-size='10' data-field-types='[[&quot;transportationCosts&quot;,[&quot;number&quot;,&quot;float64&quot;]],[&quot;travelTime&quot;,[&quot;number&quot;,&quot;float64&quot;]]]' data-show-filters='true' data-show-download='false' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='true' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[[&quot;warehouseID&quot;,[&quot;integer&quot;,&quot;int64&quot;]],[&quot;regionID&quot;,[&quot;integer&quot;,&quot;int64&quot;]]]' data-hidden-columns='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div></marimo-tabs></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "c8b989ef1a046d96fb92e8b5cdab802c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"define-and-initialize-the-decision-variables\">Define and initialize the decision variables</h3>\n<span class=\"paragraph\"><marimo-tex class=\"arithmatex\">||(x_{ij}:||)</marimo-tex> Binary variable indicating if region <marimo-tex class=\"arithmatex\">||(j||)</marimo-tex> is served by warehouse <marimo-tex class=\"arithmatex\">||(i||)</marimo-tex><br>\n<marimo-tex class=\"arithmatex\">||(y_{i}:||)</marimo-tex> Binary variable indicating if warehouse <marimo-tex class=\"arithmatex\">||(i||)</marimo-tex> is opened<br></span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "a70fbb7582b9b2db690baf3a79c3c2b4",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "c0dabdd2bf8a3c2ae66b3542b5f64860",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"define-and-implement-the-objective-function\">Define and implement the objective function</h3>\n<span class=\"paragraph\">We want to minimize the total network costs (variable costs + fixed costs):</span>\n<marimo-tex class=\"arithmatex\">||[\\min \\sum_{i\\in W}\\sum_{j\\in R} x_{ij} c_{ij} + \\sum_{i\\in W} f_i y_i||]</marimo-tex></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "88974df6fe6c6fb988e3c2b98ea07199",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "6a0d70f751c7bff951704125662ce453",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"define-and-implement-the-relevant-constraints\">Define and implement the relevant constraints</h3>\n<span class=\"paragraph\">Regions can only be served by open warehouses:<br></span>\n<marimo-tex class=\"arithmatex\">||[x_{ij} \\leq y_{i} \\quad \\forall i\\in W, j\\in R||]</marimo-tex><span class=\"paragraph\">Each region has to be served by exactly one warehouse:<br></span>\n<marimo-tex class=\"arithmatex\">||[\\sum_{i\\in W} x_{ij} = 1 \\quad \\forall j\\in R||]</marimo-tex></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "ec56f5278baf41981181ddc6b78da9ed",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "344dd96f3dcfd82dad6b7813d3394bc7",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"solve-the-problem-and-analyze-the-results\">Solve the problem and analyze the results</h3>\n<span class=\"paragraph\">Next, we use a solver to determine an optimal solution for the optimization problem.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "4f5d4504348a788271d55fd45c3ba4f1",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='iLit-0' random-id='33541564-b7c7-d5a8-dc45-475be8978b3c'><marimo-button data-initial-value='0' data-label='&quot;&#92;u003cspan class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&#92;u003e&#92;u003cspan class=&#92;&quot;paragraph&#92;&quot;&#92;u003eSolve&#92;u003c/span&#92;u003e&#92;u003c/span&#92;u003e&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "b7aa379ee41fe878c394d866f9a910e2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "45124b019e873c6db605ee95d4b55476",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "0a7d83e1f8ab4f641dd8af3d260e922b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "6dcc987fef28787b46f4452c01ce974d",
+      "outputs": [
+        {
+          "type": "error",
+          "ename": "ancestor-stopped",
+          "evalue": "This cell wasn't run because an ancestor was stopped with `mo.stop`: ",
+          "traceback": []
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": null,
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/plain": ""
+          }
+        }
+      ],
+      "console": []
+    }
+  ]
+}
