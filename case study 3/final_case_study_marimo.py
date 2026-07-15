@@ -11,19 +11,6 @@ def _(mo):
     """)
     return
 
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Names & Matrikelnnummern
-
-    - Timon Ludwig - 2998796
-    - Cornelius Maiwald - 3034735
-    - Elina Gemeinhardt - 3160764
-    """)
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
