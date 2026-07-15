@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.23.9"
+__generated_with = "0.23.11"
 app = marimo.App()
 
 
@@ -10,6 +10,7 @@ def _(mo):
     # CashLog - Designing the optimal Cash-Center Network
     """)
     return
+
 
 @app.cell(hide_code=True)
 def _(mo):
@@ -514,7 +515,7 @@ def _(comparison, plt):
     # x = y Referenzlinie: perfekte Übereinstimmung läge exakt auf dieser Geraden
     _ax.legend()
     plt.tight_layout()
-    plt.show()
+    _fig
     return
 
 
@@ -3501,7 +3502,7 @@ def _(mo, plt, sensitivity_summary):
     )
     _ax.grid(alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    _fig
     return
 
 
